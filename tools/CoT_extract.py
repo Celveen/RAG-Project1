@@ -10,7 +10,7 @@ from openai import OpenAI
 from module.storage import BaseKVStorage, JsonKVStorage, StorageNameSpace
 from functools import partial
 from typing import Type, cast
-from module.model.llm import openai_complete_if_cache, limit_async_func_call_with_multi_node, vqa_model_func_with_multi_node
+from module.model.llm import openai_complete_if_cache, limit_async_func_call, limit_async_func_call_with_multi_node, vqa_model_func, vqa_model_func_with_multi_node
 
 async def main(
         PROJECT_NAME: str,
@@ -46,8 +46,11 @@ async def main(
             if ENABLE_LLM_CACHE
             else None
         )
-    vqa_model = limit_async_func_call_with_multi_node(LLM_MODEL_MAX_ASYNC, max_node=len(os.environ.get("BASE_URL").split(';')))(
-            partial(vqa_model_func_with_multi_node, hashing_kv=llm_response_cache)
+    # 由于使用本地模型，不需要多个节点
+    # 设置VQA_MODEL环境变量
+    os.environ["VQA_MODEL"] = "./cache/huggingface/hub/Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int4"
+    vqa_model = limit_async_func_call(LLM_MODEL_MAX_ASYNC)(
+            partial(vqa_model_func, hashing_kv=llm_response_cache)
         )
 
 

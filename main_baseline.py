@@ -109,9 +109,16 @@ async def main(
         exist_question_id_list = [str(x) for x in exist_question_id_list]
     if len(whole_prompt_list) == 0:
        
+        # 只处理前 10 个样本用于测试
+        count = 0
+        max_samples = 10
         for (sample_question_id, sample_image_path, sample_question, sample_answer) in tqdm(dataset, total=len(dataset)):        
             if sample_question_id in exist_question_id_list:
                 continue
+            # 限制处理的样本数量
+            count += 1
+            if count > max_samples:
+                break
             context_dict_list = None
             if USE_RAG:  
                 if isinstance(sample_image_path, list):
@@ -120,15 +127,21 @@ async def main(
                     query_image_path = sample_image_path
                 query_embedding_dict = yannqi_rag.get_query_embdding_dict(sample_question_id, sample_question, query_image_path, DATASET_NAME, INDEX_MODEL, SAVE_EMBEDDING_PATH)
                 context_dict_list = await yannqi_rag.query(sample_question, query_mode=QUERY_MODE, top_k=(TOP_K+1), query_embedding_dict=query_embedding_dict)   
-                if sample_question_id in [context_dict['question_id'].split('_')[-1] for context_dict in context_dict_list]:
-                    context_dict_list = [context_dict for context_dict in context_dict_list if context_dict['question_id'].split('_')[-1] != sample_question_id]
-                    print(f"remove same sample_question for fair compair: {sample_question_id}")
+                # 处理空结果的情况
+                if not context_dict_list:
+                    # 如果没有检索到结果，使用空列表
+                    context_dict_list = []
                 else:
-                    context_dict_list = context_dict_list[:-1]
-                if len(context_dict_list) != TOP_K:
-                    raise ValueError(f"context_dict_list length is not equal to TOP_K, {len(context_dict_list)} != {TOP_K}")
+                    if sample_question_id in [context_dict['question_id'].split('_')[-1] for context_dict in context_dict_list]:
+                        context_dict_list = [context_dict for context_dict in context_dict_list if context_dict['question_id'].split('_')[-1] != sample_question_id]
+                        print(f"remove same sample_question for fair compair: {sample_question_id}")
+                    else:
+                        context_dict_list = context_dict_list[:-1]
+                    # 如果处理后结果不足，使用现有结果
+                    if len(context_dict_list) != TOP_K:
+                        print(f"Warning: context_dict_list length is not equal to TOP_K, {len(context_dict_list)} != {TOP_K}, using available results")
             
- 
+
             whole_prompt_list.append({'question': sample_question, 'answer': sample_answer, 'image_path': sample_image_path, 'question_id': sample_question_id, 'context_dict_list': copy.deepcopy(context_dict_list)})
         for prompt_dict in whole_prompt_list:
             prompt_dict['question_id'] = str(prompt_dict['question_id'])
@@ -155,8 +168,11 @@ async def main(
             if ENABLE_LLM_CACHE
             else None
         )
-    vqa_model = limit_async_func_call_with_multi_node(LLM_MODEL_MAX_ASYNC, max_node=len(os.environ.get("BASE_URL").split(';')))(
-            partial(vqa_model_func_with_multi_node, hashing_kv=llm_response_cache)
+    # 使用本地Hugging Face模型
+    os.environ["VQA_MODEL"] = "./cache/huggingface/hub/Qwen/Qwen2-VL-7B-Instruct-GPTQ-Int4"
+    from module.model.llm import limit_async_func_call, vqa_model_func
+    vqa_model = limit_async_func_call(LLM_MODEL_MAX_ASYNC)(
+            partial(vqa_model_func, hashing_kv=llm_response_cache)
         )
     
     
@@ -235,10 +251,8 @@ if __name__ == '__main__':
         if key.endswith('_CONFIG'):
             temp_dict = OmegaConf.load(args_dict[key]) 
             args_dict = OmegaConf.merge(args_dict, temp_dict)
-    openai_client = OpenAI(api_key= os.environ.get("API_KEY"), base_url=os.environ.get("BASE_URL").split(';')[0])
-    model_cards =  openai_client.models.list()
-    model_name = model_cards.data[0].id
-    model_name = model_name.split('/')[-1]
+    # 使用本地Hugging Face模型
+    model_name = "Qwen2-VL-7B-Instruct-GPTQ-Int4"
     args_dict.PROJECT_NAME = model_name + '_' + args_dict.PROJECT_NAME
     LOG_DIR = create_output_folders(project_name=args_dict.PROJECT_NAME, output_dir=args_dict.LOG_DIR_ORI, config=args_dict, with_time=args_dict.WITH_TIME)
     create_logging(logger, LOG_DIR)

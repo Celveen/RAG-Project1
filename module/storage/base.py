@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from typing import TypedDict, Union, Literal, Generic, TypeVar
+from typing import TypedDict, Union, Literal, Generic, TypeVar, List, Dict, Set, Tuple
 from hashlib import md5
 import numpy as np
 
@@ -68,10 +68,10 @@ class BaseVectorStorage(StorageNameSpace):
     embedding_batch_num: int
     meta_fields: set = field(default_factory=set)
     
-    async def query(self, query: str, top_k: int) -> list[dict]:
+    async def query(self, query: str, top_k: int) -> List[dict]:
         raise NotImplementedError
 
-    async def upsert(self, data: dict[str, dict]):
+    async def upsert(self, data: Dict[str, dict]):
         """Use 'content' field from value for embedding, use key as id.
         If embedding_func is None, use 'embedding' field from value
         """
@@ -80,22 +80,22 @@ class BaseVectorStorage(StorageNameSpace):
 
 @dataclass
 class BaseKVStorage(Generic[T], StorageNameSpace):
-    async def all_keys(self) -> list[str]:
+    async def all_keys(self) -> List[str]:
         raise NotImplementedError
 
     async def get_by_id(self, id: str) -> Union[T, None]:
         raise NotImplementedError
 
     async def get_by_ids(
-        self, ids: list[str], fields: Union[set[str], None] = None
-    ) -> list[Union[T, None]]:
+        self, ids: List[str], fields: Union[Set[str], None] = None
+    ) -> List[Union[T, None]]:
         raise NotImplementedError
 
-    async def filter_keys(self, data: list[str]) -> set[str]:
+    async def filter_keys(self, data: List[str]) -> Set[str]:
         """return un-exist keys"""
         raise NotImplementedError
 
-    async def upsert(self, data: dict[str, T]):
+    async def upsert(self, data: Dict[str, T]):
         raise NotImplementedError
 
     async def drop(self):
@@ -126,19 +126,19 @@ class BaseGraphStorage(StorageNameSpace):
 
     async def get_node_edges(
         self, source_node_id: str
-    ) -> Union[list[tuple[str, str]], None]:
+    ) -> Union[List[Tuple[str, str]], None]:
         raise NotImplementedError
 
-    async def upsert_node(self, node_id: str, node_data: dict[str, str]):
+    async def upsert_node(self, node_id: str, node_data: Dict[str, str]):
         raise NotImplementedError
 
     async def upsert_edge(
-        self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
+        self, source_node_id: str, target_node_id: str, edge_data: Dict[str, str]
     ):
         raise NotImplementedError
 
     async def clustering(self, algorithm: str):
         raise NotImplementedError
 
-    async def embed_nodes(self, algorithm: str) -> tuple[np.ndarray, list[str]]:
+    async def embed_nodes(self, algorithm: str) -> Tuple[np.ndarray, List[str]]:
         raise NotImplementedError("Node embedding is not used in lightrag.")

@@ -18,7 +18,8 @@ async def naive_text_query(
     results = await question_vdb.query(query, top_k=top_k, query_embedding_dict=query_embedding_dict)
 
     if not len(results):
-        return PROMPTS["fail_response"]
+        # 返回一个空列表，而不是字符串
+        return []
     
     question_ids = [r["id"] for r in results]
     VQA_docs = await VQA_docs_db.get_by_ids(question_ids)

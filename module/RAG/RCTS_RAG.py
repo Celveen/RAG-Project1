@@ -14,7 +14,7 @@ from misc.logger import logger
 from module.model.embedding_model import hf_embedding
 from module.model.query import naive_text_query, random_query, hybrid_query
 
-from flmr import FLMRModelForIndexing, FLMRQueryEncoderTokenizer, FLMRContextEncoderTokenizer, FLMRModelForRetrieval
+from flmr import FLMRModelForRetrieval, FLMRQueryEncoderTokenizer, FLMRContextEncoderTokenizer, FLMRConfig, FLMRModelForRetrieval
 from flmr import index_custom_collection
 from flmr import create_searcher, search_custom_collection
 
@@ -70,16 +70,26 @@ class RCTS_RAG:
             )
         if 'pre_flmr' in self.index_type:
 
-            query_tokenizer = FLMRQueryEncoderTokenizer.from_pretrained(self.index_model['COLBELT_MODEL']['MODEL_PATH'], subfolder="query_tokenizer")
+            # Load FLMR config
+            flmr_config = FLMRConfig.from_pretrained(self.index_model['COLBERT_MODEL']['MODEL_PATH'])
+            
+            # Initialize tokenizers with text_config
+            query_tokenizer = FLMRQueryEncoderTokenizer.from_pretrained(
+                self.index_model['COLBERT_MODEL']['MODEL_PATH'],
+                text_config=flmr_config.text_config,
+                subfolder="query_tokenizer"
+            )
             context_tokenizer = FLMRContextEncoderTokenizer.from_pretrained(
-                self.index_model['COLBELT_MODEL']['MODEL_PATH'], subfolder="context_tokenizer"
+                self.index_model['COLBERT_MODEL']['MODEL_PATH'],
+                text_config=flmr_config.text_config,
+                subfolder="context_tokenizer"
             )
             self.pre_flmr_model = FLMRModelForRetrieval.from_pretrained(
-                self.index_model['COLBELT_MODEL']['MODEL_PATH'],
+                self.index_model['COLBERT_MODEL']['MODEL_PATH'],
                 query_tokenizer=query_tokenizer,
                 context_tokenizer=context_tokenizer,
             )
-            self.image_processor = AutoImageProcessor.from_pretrained(self.index_model['COLBELT_MODEL']['VIT_PATH'], trust_remote_code=True)
+            self.image_processor = AutoImageProcessor.from_pretrained(self.index_model['COLBERT_MODEL']['VIT_PATH'], trust_remote_code=True)
             self.searcher = None
    
     async def docs_json_storage_construct(self, VQA_dict_list):
@@ -237,8 +247,8 @@ class RCTS_RAG:
 
     @staticmethod 
     def get_query_embdding_dict(question_id, query_content, image_path, dataset_name, embedding_dict, embedding_path):
-        # keys COLBELT_MODEL, EMBEDDING_MODEL
-        key = 'EMBEDDING_MODEL' if image_path is None else 'COLBELT_MODEL'
+        # keys COLBERT_MODEL, EMBEDDING_MODEL
+        key = 'EMBEDDING_MODEL' if image_path is None else 'COLBERT_MODEL'
         embedding_name = embedding_dict[key]['MODEL_NAME']
         embedding_path = os.path.join(embedding_path, dataset_name, embedding_name)
         file_embedding_path = os.path.join(embedding_path, str(question_id) + '.pt')

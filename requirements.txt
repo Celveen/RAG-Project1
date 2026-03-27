@@ -15,7 +15,7 @@ openai>=1.0.0
 # Data processing
 pandas>=1.5.0
 numpy>=1.21.0
-PIL>=8.0.0
+#PIL >= 8.0.0
 
 # Configuration and utilities
 omegaconf>=2.3.0

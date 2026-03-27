@@ -3,14 +3,15 @@ PROJECT_NAME: ScienceQA_Text_Faiss_MiniLM-L6-v2_woCoT_wnewprompt_wimgpath_bug_fi
 ## Dataset Config
 DATASET_NAME: ScienceQA  # dataset name, e.g., ok, aok
 DATASET_PATH:
-    DATA_ROOT: ./dataspace/ScienceQA_DATA
+    DATA_ROOT: /home/xiaochen/RCTS-RAG/Dataset/ScienceQA/data/scienceqa
 
+INDEX_TYPE: faiss
 
 ## EMBEDDING MODEL
-EMBEDDING_MODEL:
-    EMBEDDING_NAME: all-MiniLM-L6-v2
-    MODEL_PATH: ./cache/huggingface/hub/models--sentence-transformers--all-MiniLM-L6-v2/snapshots/ea78891063587eb050ed4166b20062eaf978037c
-
+INDEX_MODEL:
+    EMBEDDING_MODEL:
+        MODEL_NAME: all-MiniLM-L6-v2
+        MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
 
 # Other Config
 DATASET_PATH_CONFIG: configs/dataset_path.yaml

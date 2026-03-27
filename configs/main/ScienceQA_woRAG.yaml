@@ -5,7 +5,7 @@ USE_RAG: False
 ## Dataset Config
 DATASET_NAME: ScienceQA  # dataset name, e.g., ok, aok
 DATASET_PATH:
-    DATA_ROOT: ./dataspace/ScienceQA_DATA/
+    DATA_ROOT: /home/xiaochen/RCTS-RAG/Dataset/ScienceQA/data/scienceqa
 
 COT_CSV_PATH: null
 

@@ -1,3 +1,4 @@
+from typing import List, Dict, Set, Tuple
 import os
 from dataclasses import dataclass
 import torch
@@ -38,7 +39,7 @@ class EmbeddingFunc:
     retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
 )
 async def openai_embedding(
-    texts: list[str],
+    texts: List[str],
     model: str = "text-embedding-3-small",
     base_url: str = None,
     api_key: str = None,
@@ -62,7 +63,7 @@ async def openai_embedding(
     retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
 )
 async def azure_openai_embedding(
-    texts: list[str],
+    texts: List[str],
     model: str = "text-embedding-3-small",
     base_url: str = None,
     api_key: str = None,
@@ -90,7 +91,7 @@ async def azure_openai_embedding(
     retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),
 )
 async def siliconcloud_embedding(
-    texts: list[str],
+    texts: List[str],
     model: str = "netease-youdao/bce-embedding-base_v1",
     base_url: str = "https://api.siliconflow.cn/v1/embeddings",
     max_token_size: int = 512,
@@ -129,7 +130,7 @@ async def siliconcloud_embedding(
 #     retry=retry_if_exception_type((RateLimitError, APIConnectionError, Timeout)),  # TODO: fix exceptions
 # )
 async def bedrock_embedding(
-    texts: list[str],
+    texts: List[str],
     model: str = "amazon.titan-embed-text-v2:0",
     aws_access_key_id=None,
     aws_secret_access_key=None,
@@ -194,7 +195,7 @@ async def bedrock_embedding(
         return np.array(embed_texts)
 
 
-async def hf_embedding(texts: list[str], tokenizer, embed_model) -> np.ndarray:
+async def hf_embedding(texts: List[str], tokenizer, embed_model) -> np.ndarray:
     device = next(embed_model.parameters()).device
     input_ids = tokenizer(
         texts, return_tensors="pt", padding=True, truncation=True
@@ -208,7 +209,7 @@ async def hf_embedding(texts: list[str], tokenizer, embed_model) -> np.ndarray:
         return embeddings.detach().cpu().numpy()
 
 
-async def ollama_embedding(texts: list[str], embed_model, **kwargs) -> np.ndarray:
+async def ollama_embedding(texts: List[str], embed_model, **kwargs) -> np.ndarray:
     embed_text = []
     ollama_client = ollama.Client(**kwargs)
     for text in texts:

@@ -8,13 +8,13 @@ INDEX_TYPE:  faiss_and_pre_flmr
 
 ## EMBEDDING MODEL
 INDEX_MODEL:
-    COLBELT_MODEL:
+    COLBERT_MODEL:
         MODEL_NAME: PreFLMR_ViT-L
-        MODEL_PATH: ./cache/huggingface/hub/PreFLMR_ViT-L
-        VIT_PATH: ./cache/huggingface/hub/clip-vit-large-patch14
+        MODEL_PATH: LinWeizheDragon/PreFLMR_ViT-L
+        VIT_PATH: openai/clip-vit-large-patch14
     EMBEDDING_MODEL:
         MODEL_NAME: all-MiniLM-L6-v2
-        MODEL_PATH: ./cache/huggingface/hub/all-MiniLM-L6-v2/
+        MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
 # Other Config
 DATASET_PATH_CONFIG: configs/dataset_path.yaml
 TASK_CONFIG: configs/task_config.yaml

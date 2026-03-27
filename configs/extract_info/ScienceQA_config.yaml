@@ -1,15 +1,15 @@
 # Base Config
 PROJECT_NAME: ScienceQA_QwenVL2_7B_Self_Cot_trainval
 INFO_EXTRACT_TYPE: Self_CoT
-CoT_LOOP_TIMES: 10
-Reward_LOOP_TIMES: 10
+CoT_LOOP_TIMES: 3
+Reward_LOOP_TIMES: 3
 ## Dataset Config
 DATASET_NAME: ScienceQA  # dataset name, e.g., ok, aok
 DATASET_PATH:
-    DATA_ROOT: ./dataspace/ScienceQA_DATA
+    DATA_ROOT: /home/xiaochen/RCTS-RAG/Dataset/ScienceQA/data/scienceqa
 
 ## API Config
-LLM_MODEL_MAX_ASYNC: 20
+LLM_MODEL_MAX_ASYNC: 5
 
 api_extra_body:
     temperature: 0.7

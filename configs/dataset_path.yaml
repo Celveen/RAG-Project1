@@ -1,5 +1,12 @@
 # config.yaml
 
+dataset_path:
+  ScienceQA: "/home/xiaochen/RCTS-RAG/Dataset/ScienceQA"
+  MathV: ""
+  MMMU: ""
+  VizWiz: ""
+  VSR_MC: ""
+
 log_root: outputs/logs/
 ckpt_root: outputs/ckpts/
 results_root: outputs/results/

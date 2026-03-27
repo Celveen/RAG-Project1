@@ -45,15 +45,12 @@ os.environ["TOKENIZERS_PARALLELISM"] = "false"
 async def vqa_model_func(
         prompt, system_prompt=None, history_messages=[], extra_body=None, **kwargs
         ) -> str:
-        # TODO 异步调用
-        return await openai_complete_if_cache(  
-            model=os.environ.get("VQA_MODEL"), 
+        # 使用本地Hugging Face模型进行推理
+        return await hf_model_if_cache(
+            model=os.environ.get("VQA_MODEL"),
             prompt=prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
-            base_url=os.environ.get("BASE_URL"),
-            api_key=os.environ.get("API_KEY"),
-            extra_body=extra_body,
             **kwargs,
         )
 
@@ -61,16 +58,12 @@ async def vqa_model_func(
 async def vqa_model_func_with_multi_node(
         prompt, system_prompt=None, node_index=0, history_messages=[], extra_body=None, **kwargs
         ) -> str:
-        # TODO 异步调用
-    
-        return await openai_complete_if_cache(  
-            model=os.environ.get("VQA_MODEL"), 
+        # 使用本地Hugging Face模型进行推理
+        return await hf_model_if_cache(
+            model=os.environ.get("VQA_MODEL"),
             prompt=prompt,
             system_prompt=system_prompt,
             history_messages=history_messages,
-            base_url=os.environ.get("BASE_URL").split(';')[node_index],
-            api_key=os.environ.get("API_KEY"),
-            extra_body=extra_body,
             **kwargs,
         )
 
@@ -266,9 +259,10 @@ async def vllm_model_if_cache(
                     + ">\n"
                 )
 
+    device = "cuda" if torch.cuda.is_available() else "cpu"
     input_ids = hf_tokenizer(
         input_prompt, return_tensors="pt", padding=True, truncation=True
-    ).to("cuda")
+    ).to(device)
     inputs = {k: v.to(hf_model.device) for k, v in input_ids.items()}
     output = hf_model.generate(
         **input_ids, max_new_tokens=512, num_return_sequences=1, early_stopping=True
@@ -422,29 +416,35 @@ async def bedrock_complete_if_cache(
 
 @lru_cache(maxsize=1)
 def initialize_hf_model(model_name):
-    hf_tokenizer = AutoTokenizer.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
+    from transformers import AutoProcessor, AutoModelForVision2Seq
+    hf_processor = AutoProcessor.from_pretrained(
+        model_name, trust_remote_code=True
     )
-    hf_model = AutoModelForCausalLM.from_pretrained(
-        model_name, device_map="auto", trust_remote_code=True
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    hf_model = AutoModelForVision2Seq.from_pretrained(
+        model_name, device_map=device, trust_remote_code=True
     )
-    if hf_tokenizer.pad_token is None:
-        hf_tokenizer.pad_token = hf_tokenizer.eos_token
+    if hf_processor.tokenizer.pad_token is None:
+        hf_processor.tokenizer.pad_token = hf_processor.tokenizer.eos_token
 
-    return hf_model, hf_tokenizer
+    return hf_model, hf_processor
 
 
 async def hf_model_if_cache(
     model, prompt, system_prompt=None, history_messages=[], **kwargs
 ) -> str:
     model_name = model
-    hf_model, hf_tokenizer = initialize_hf_model(model_name)
+    hf_model, hf_processor = initialize_hf_model(model_name)
     hashing_kv: BaseKVStorage = kwargs.pop("hashing_kv", None)
-    messages = []
-    if system_prompt:
-        messages.append({"role": "system", "content": system_prompt})
-    messages.extend(history_messages)
-    messages.append({"role": "user", "content": prompt})
+    # 如果prompt已经是一个消息列表，直接使用
+    if isinstance(prompt, list) and all(isinstance(item, dict) for item in prompt):
+        messages = prompt
+    else:
+        messages = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.extend(history_messages)
+        messages.append({"role": "user", "content": prompt})
 
     if hashing_kv is not None:
         args_hash = compute_args_hash(model, messages)
@@ -453,7 +453,7 @@ async def hf_model_if_cache(
             return if_cache_return["return"]
     input_prompt = ""
     try:
-        input_prompt = hf_tokenizer.apply_chat_template(
+        input_prompt = hf_processor.tokenizer.apply_chat_template(
             messages, tokenize=False, add_generation_prompt=True
         )
     except Exception:
@@ -467,7 +467,7 @@ async def hf_model_if_cache(
                     + messages[1]["content"]
                 )
                 messages = messages[1:]
-                input_prompt = hf_tokenizer.apply_chat_template(
+                input_prompt = hf_processor.tokenizer.apply_chat_template(
                     messages, tokenize=False, add_generation_prompt=True
                 )
         except Exception:
@@ -484,14 +484,15 @@ async def hf_model_if_cache(
                     + ">\n"
                 )
 
-    input_ids = hf_tokenizer(
+    device = "cuda" if torch.cuda.is_available() else "cpu"
+    input_ids = hf_processor.tokenizer(
         input_prompt, return_tensors="pt", padding=True, truncation=True
-    ).to("cuda")
+    ).to(device)
     inputs = {k: v.to(hf_model.device) for k, v in input_ids.items()}
     output = hf_model.generate(
         **input_ids, max_new_tokens=512, num_return_sequences=1, early_stopping=True
     )
-    response_text = hf_tokenizer.decode(
+    response_text = hf_processor.tokenizer.decode(
         output[0][len(inputs["input_ids"][0]) :], skip_special_tokens=True
     )
     if hashing_kv is not None:

@@ -3,7 +3,7 @@ import html
 import os
 import xxhash
 from dataclasses import dataclass
-from typing import Any, Union, cast
+from typing import Any, Union, cast, List, Dict, Set, Tuple
 import networkx as nx
 import numpy as np
 # from nano_vectordb import NanoVectorDB
@@ -37,7 +37,7 @@ class JsonKVStorage(BaseKVStorage):
         self._data = load_json(self._file_name) or {}
         logger.info(f"Load KV {self.namespace} with {len(self._data)} data")
 
-    async def all_keys(self) -> list[str]:
+    async def all_keys(self) -> List[str]:
         return list(self._data.keys())
 
     async def index_done_callback(self):
@@ -58,10 +58,10 @@ class JsonKVStorage(BaseKVStorage):
             for id in ids
         ]
 
-    async def filter_keys(self, data: list[str]) -> set[str]:
+    async def filter_keys(self, data: List[str]) -> Set[str]:
         return set([s for s in data if s not in self._data])
 
-    async def upsert(self, data: dict[str, dict]):
+    async def upsert(self, data: Dict[str, dict]):
         left_data = {k: v for k, v in data.items() if k not in self._data}
         self._data.update(left_data)
         return left_data
@@ -98,7 +98,7 @@ class FaissVectorDBStorage(BaseVectorStorage):
         # )
         
        
-    async def upsert(self, data: dict[str, dict]):
+    async def upsert(self, data: Dict[str, dict]):
         logger.info(f"Inserting {len(data)} vectors to {self.namespace}")
         if not len(data):
             logger.warning("You insert an empty data to vector DB")
@@ -172,7 +172,7 @@ class NanoVectorDBStorage(BaseVectorStorage):
             "cosine_better_than_threshold", self.cosine_better_than_threshold
         )
 
-    async def upsert(self, data: dict[str, dict]):
+    async def upsert(self, data: Dict[str, dict]):
         logger.info(f"Inserting {len(data)} vectors to {self.namespace}")
         if not len(data):
             logger.warning("You insert an empty data to vector DB")
@@ -321,15 +321,15 @@ class NetworkXStorage(BaseGraphStorage):
             return list(self._graph.edges(source_node_id))
         return None
 
-    async def upsert_node(self, node_id: str, node_data: dict[str, str]):
+    async def upsert_node(self, node_id: str, node_data: Dict[str, str]):
         self._graph.add_node(node_id, **node_data)
 
     async def upsert_edge(
-        self, source_node_id: str, target_node_id: str, edge_data: dict[str, str]
+        self, source_node_id: str, target_node_id: str, edge_data: Dict[str, str]
     ):
         self._graph.add_edge(source_node_id, target_node_id, **edge_data)
 
-    async def embed_nodes(self, algorithm: str) -> tuple[np.ndarray, list[str]]:
+    async def embed_nodes(self, algorithm: str) -> Tuple[np.ndarray, List[str]]:
         if algorithm not in self._node_embed_algorithms:
             raise ValueError(f"Node embedding algorithm {algorithm} not supported")
         return await self._node_embed_algorithms[algorithm]()

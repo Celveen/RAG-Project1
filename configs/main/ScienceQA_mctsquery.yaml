@@ -4,11 +4,11 @@ USE_RAG: True
 ## Dataset Config
 DATASET_NAME: ScienceQA  # dataset name, e.g., ok, aok
 DATASET_PATH:
-    DATA_ROOT: ./dataspace/ScienceQA_DATA/
+    DATA_ROOT: /home/xiaochen/RCTS-RAG/Dataset/ScienceQA/data/scienceqa
 ## API Model Config
 ## CoT Path
-COT_CSV_PATH: ./logs/ScienceQA_QwenVL2_7B_Self_Cot_trainval/outputs/trainval_pred_CoT.csv
-# COT_CSV_PATH: null
+# COT_CSV_PATH: ./logs/ScienceQA_QwenVL2_7B_Self_Cot_trainval/outputs/trainval_pred_CoT.csv
+COT_CSV_PATH: null
 ENABLE_LLM_CACHE: False
 LLM_MODEL_MAX_ASYNC: 20
 api_extra_body:
@@ -24,13 +24,13 @@ reward_api_extra_body:
 
 ## Faiss Config
 INDEX_MODEL:
-    COLBELT_MODEL:
+    COLBERT_MODEL:
         MODEL_NAME: PreFLMR_ViT-L
         MODEL_PATH: ./cache/huggingface/hub/PreFLMR_ViT-L
         VIT_PATH: ./cache/huggingface/hub/clip-vit-large-patch14
     EMBEDDING_MODEL:
         MODEL_NAME: all-MiniLM-L6-v2
-        MODEL_PATH: ./cache/huggingface/hub/all-MiniLM-L6-v2/
+        MODEL_PATH: sentence-transformers/all-MiniLM-L6-v2
 
 USE_MCTS: True
 MCTS_TOP_K: 3
@@ -45,9 +45,9 @@ REWARD_CONFIG_DICT:
     reverse_weight: 0.8 # only for mutual reward
     reward_loop_times: 5
 
-INDEX_TYPE: faiss_and_pre_flmr
-QUERY_MODE: hybrid # random \naive_text\ hybrid
-FAISS_DIR: ./logs/Index_ScienceQA_Hybrid_Pre_Flmr/
+INDEX_TYPE: faiss
+QUERY_MODE: naive_text # random \naive_text\ hybrid
+FAISS_DIR: ./logs/ScienceQA_Text_Faiss_MiniLM-L6-v2_woCoT_wnewprompt_wimgpath_bug_fix/
 # Other Config
 DATASET_PATH_CONFIG: configs/dataset_path.yaml
 TASK_CONFIG: configs/task_config.yaml
